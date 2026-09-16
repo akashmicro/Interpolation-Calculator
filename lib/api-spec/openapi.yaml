@@ -1,0 +1,207 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: interpolation
+    description: Newton equal-interval interpolation operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /interpolate:
+    post:
+      operationId: calculateInterpolation
+      tags: [interpolation]
+      summary: Calculate a Newton interpolation
+      description: Validates equally spaced input data and returns the selected Newton forward or backward calculation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InterpolationInput"
+      responses:
+        "200":
+          description: Interpolation calculation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterpolationResult"
+        "400":
+          description: Invalid interpolation input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    InterpolationInput:
+      type: object
+      properties:
+        xValues:
+          type: array
+          minItems: 2
+          items:
+            type: number
+        yValues:
+          type: array
+          minItems: 2
+          items:
+            type: number
+        targetX:
+          type: number
+        method:
+          type: string
+          enum: [forward, backward]
+        compare:
+          type: boolean
+          default: false
+      required: [xValues, yValues, targetX, method]
+    InterpolationResult:
+      type: object
+      properties:
+        method:
+          type: string
+          enum: [forward, backward]
+        methodLabel:
+          type: string
+        xValues:
+          type: array
+          items:
+            type: number
+        yValues:
+          type: array
+          items:
+            type: number
+        h:
+          type: number
+        u:
+          type: number
+        targetX:
+          type: number
+        interpolatedY:
+          type: number
+        differenceTable:
+          type: array
+          items:
+            $ref: "#/components/schemas/DifferenceRow"
+        differenceSymbols:
+          type: array
+          items:
+            type: string
+        terms:
+          type: array
+          items:
+            $ref: "#/components/schemas/InterpolationTerm"
+        steps:
+          type: array
+          items:
+            type: string
+        graph:
+          $ref: "#/components/schemas/GraphData"
+        comparison:
+          oneOf:
+            - $ref: "#/components/schemas/ComparisonResult"
+            - type: "null"
+        recommendation:
+          type: string
+      required:
+        - method
+        - methodLabel
+        - xValues
+        - yValues
+        - h
+        - u
+        - targetX
+        - interpolatedY
+        - differenceTable
+        - differenceSymbols
+        - terms
+        - steps
+        - graph
+        - comparison
+        - recommendation
+    DifferenceRow:
+      type: object
+      additionalProperties:
+        type: number
+    InterpolationTerm:
+      type: object
+      properties:
+        order:
+          type: number
+        symbol:
+          type: string
+        coefficient:
+          type: number
+        difference:
+          type: number
+        value:
+          type: number
+        expression:
+          type: string
+      required: [order, symbol, coefficient, difference, value, expression]
+    GraphData:
+      type: object
+      properties:
+        curve:
+          type: array
+          items:
+            $ref: "#/components/schemas/GraphPoint"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/GraphPoint"
+        target:
+          $ref: "#/components/schemas/GraphPoint"
+      required: [curve, data, target]
+    GraphPoint:
+      type: object
+      properties:
+        x:
+          type: number
+        y:
+          type: number
+      required: [x, y]
+    ComparisonResult:
+      type: object
+      properties:
+        forward:
+          type: number
+        backward:
+          type: number
+        difference:
+          type: number
+      required: [forward, backward, difference]
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
